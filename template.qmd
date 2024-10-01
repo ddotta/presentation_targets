@@ -345,7 +345,7 @@ tar_target(
 ```
 
 <br>
-=> Dans le dossier `_targets/object`, le fichier sera stocké au forma exigé.
+=> Dans le dossier `_targets/object`, le fichier sera stocké au format exigé.
 
 ## Gestion des données en cache
 
@@ -372,7 +372,7 @@ targets propose également plusieurs fonctions pour gérer les données et méta
 
 - `tar_make()` s’exécute toujours dans un **environnement vide**, ce qui élimine les problèmes liés à l’état de notre session en cours et garantit la **reproductibilité des résultats**.  
 
-- Comme targets conserve une copie des résultats des cibles en **cache**, pas besoin de tout recalculer quand on relance le projet, on peut récupérer *µµ**directement les résultats et savoir si ils sont à jour**.  
+- Comme targets conserve une copie des résultats des cibles en **cache**, pas besoin de tout recalculer quand on relance le projet, on peut récupérer *µµ**directement les résultats et savoir s'ils sont à jour**.  
 
 - `tar_make()` ne recalcule que les cibles qui le nécessitent, **les temps de calcul** et d’exécution sont **optimisés.**
 
