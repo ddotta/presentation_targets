@@ -1,0 +1,396 @@
+---
+title: "Le package targets"
+subtitle: "Créer des chaînes de traitements reproductibles avec R"
+date: today
+date-format: "DD/MM/YYYY"
+author: "SSP/DEMESIS/BQIS/PAOS"
+description: |
+  Présentation du package targets au GUR de novembre 2024
+
+slide-tone: false # for blind readers
+chalkboard: false # press the B key to toggle chalkboard
+transition: slide
+fig-cap-location: bottom
+self-contained: true
+
+toc: true
+toc-title: Sommaire
+toc-depth: 1
+toc-float: true
+
+# multiplex: true
+execute:
+  echo: false
+  warning: false
+  cache: false
+editor:
+  render-on-save: true
+---
+
+## A quoi sert le package targets ?
+
+**Plusieurs objectifs :**
+
+- Viser la reproductibilité  
+- Adopter les bonnes pratiques de développement  
+- Représenter les étapers d'une chaîne de traitement sous forme de *pipeline*  
+- Facilier la prise en main par autrui  
+
+## Pré-requis à targets
+
+<br>
+- `targets` s'applique aux projets avec une forte contrainte de reproductibilité  
+<br>
+- La chaîne de traitement doit être **exclusivement codée avec R**  
+<br>
+- Ce package se justifie sur les projets **avec une certaine ampleur**
+
+## C'est quoi une chaîne de traitement ?
+
+[Une chaîne de traitement (ou un *pipeline* en anglais) est constituée par l'ensemble des étapes qui s'y déroulent.]{.Terre_battue1}
+<br>
+
+Un exemple simple serait :  
+
+1. Chargement des données  
+2. Traitement des données  
+3. Production de résultats  
+4. Représentation graphique des résultats
+
+## Exemple de chaîne de traitement (1/3)
+
+```{.r}
+library(readr)
+library(dplyr)
+library(ggplot2)
+```
+
+1. Chargement des données 
+
+```{.r}
+mes_donnees <- readr::read_csv("iris.csv")
+```
+
+
+2. Traitement des données  
+
+```{.r}
+mes_traitements <- mes_donnees |> 
+  filter(Sepal.Length >= 5)
+```
+
+## Exemple de chaîne de traitement (2/3)
+
+3. Production de résultats  
+
+```{.r}
+#' @name agregations
+#'
+#' @param base nom de la base sur laquelle on agrege les donnees
+#'
+#' @return une base agregee
+agregations <- function(base) {
+  base |> 
+  group_by(Species) |> 
+  summarise(
+    moyenne_petales = mean(Petal.Length, na.rm = TRUE),
+    moyenne_sepales = mean(Sepal.Length, na.rm = TRUE)
+  )
+}
+
+mes_resultats <- mes_traitements |> 
+  agregations()
+```
+
+## Exemple de chaîne de traitement (3/3)
+
+4. Représentation graphique des résultats
+
+```{.r}
+#' @name faire_graphiques
+#'
+#' @param base nom de la base sur laquelle on realise le graphique
+#' @param partie partie de la fleur sur laquelle realiser le graphique
+#'
+#' @return un graphique ggplot2
+faire_graphiques <- function(base, partie) {
+  ggplot(data = base) + 
+  geom_jitter(aes(x = partie, y = Species, color=Species),
+              width=0.05, height=0.1, alpha=0.5)
+}
+
+mes_resultats |> 
+  faire_graphiques()
+```
+
+## Création du fichier `_targets.R` (1/2)
+
+Le package impose une seule chose :  
+[Créer un fichier `_targets.R` **à la racine de votre projet**]{.souligneRouge}  
+
+**Ce fichier contient la description de l'ensemble des étapes de votre chaîne de traitement.**
+
+Voici comment est structuré mon projet R mais **aucune organisation n'est imposée par le package**.  
+
+<br>
+
+```
+├── donnees
+│   └── iris.csv
+├── R
+│   ├── agregations.R
+│   └── faire_graphiques.R
+└── _targets.R
+```
+
+## Création du fichier `_targets.R` (2/2)
+
+La chaîne de traitement (soit le fichier `_targets.R`) est représentée par une 
+liste de `tar_target()`, soit les objets R qui sont les cibles intermédiaires de l’analyse.  
+<br>
+[Ils sont le résultat de l’application à une cible précédente d’une fonction pour obtenir la cible suivante.]{.Terre_battue1}
+
+
+- Le premier argument des `tar_target()` est le nom de la cible (que vous choisissez - un nom de cible doit être unique).  
+- Le second argument est la commande R qui va être être effectuée sur la cible.  
+- Les autres arguments sont facultatifs (voir [ici](https://docs.ropensci.org/targets/reference/tar_target.html))
+
+## Exemple simple de fichier `_targets.R`  
+
+![](img/schema_cibles_targets.png){fig-align="center"}
+
+## Lancer la chaîne de traitement
+
+<br> 
+
+[Pour lancer l'exécution de la chaîne de traitement, on utiliser la fonction tar_make().]{.Terre_battue1}  
+
+<br>
+
+Lorsqu’on utilise [tar_make()](https://docs.ropensci.org/targets/reference/tar_make.html), targets :  
+
+- Lance une nouvelle session R (pour éviter tout problème ou conflit lié à l’état de notre session actuelle)  
+- Charge les extensions définies via [tar_option_set()](https://docs.ropensci.org/targets/reference/tar_option_set.html)  
+- Lance l'exécution du pipeline.  
+
+## Que fait exactement `targets` ?
+
+<br> 
+A partir d'une chaîne de traitement, ce package permet de sauvegarder automatiquement dans un cache les résultats intermédiaires (appelés *"targets"* ou *cibles*) :   
+
+```
+> tar_make()
+▶ dispatched target fichier_donnees
+● completed target fichier_donnees [0.42 seconds]
+▶ dispatched target mes_donnees
+● completed target mes_donnees [0.21 seconds]
+▶ dispatched target mes_traitements
+● completed target mes_traitements [0 seconds]
+▶ dispatched target mes_resultats
+● completed target mes_resultats [0.02 seconds]
+▶ dispatched target mon_graphique
+● completed target mon_graphique [0.02 seconds]
+▶ ended pipeline [0.96 seconds]
+```
+
+## Visualiser l'état de la chaîne de traitement
+
+Lorsque la chaîne de traitement est modeste (comme dans notre exemple), on peut 
+la visualiser avec la fonction [tar_visnetwork()](https://docs.ropensci.org/targets/reference/tar_visnetwork.html).  
+
+Cette fonction affiche sous forme de diagramme la structure de notre pipeline :  
+
+![](img/diagramme_visnetwork_1.png){fig-align="center"}  
+
+## Aide à l'interprétation de la visualisation
+
+Comment interpréter :  
+
+- Les différents **cibles** apparaissent sous forme de **cercles**  
+- Les **fonctions** qui leur sont appliquées apparaissent sous forme de **triangles**  
+- Les dépendances entre les **cibles** et les **fonctions** apparaissent sous forme de **flèches**  
+- Les **couleurs** correspondent aux différents états des éléments
+
+## D'autres fonctions utiles
+
+- La fonction [tar_load()](https://docs.ropensci.org/targets/reference/tar_load.html) permet - à n'importe quel moment - de **charger les objets** d'intérêt dans notre session.  
+
+```{.r}
+> tar_load(mes_donnees)
+> mes_donnees
+# A tibble: 150 × 5
+   Sepal.Length Sepal.Width Petal.Length Petal.Width Species
+          <dbl>       <dbl>        <dbl>       <dbl> <chr>  
+ 1           51          35           14           2 setosa 
+ 2           49           3           14           2 setosa 
+ 3           47          32           13           2 setosa 
+ 4           46          31           15           2 setosa 
+ 5            5          36           14           2 setosa 
+ 6           54          39           17           4 setosa 
+ 7           46          34           14           3 setosa 
+ 8            5          34           15           2 setosa 
+ 9           44          29           14           2 setosa 
+10           49          31           15           1 setosa 
+# ℹ 140 more rows
+# ℹ Use `print(n = ...)` to see more rows
+```
+
+- La fonction [tar_read()](https://docs.ropensci.org/targets/reference/tar_read.html) permet - à n'importe quel moment - de lire les résultats d'une des cibles/targets afin (par exemple) de pouvoir les stocker dans un nouvel objet. 
+
+```{.r}
+resultats_analyse <- tar_read(mes_resultats)
+```
+
+## Modification du pipeline (1/6)
+
+Relançons notre pipeline sans rien modifier :
+
+```{.r}
+> tar_make()
+✔ skipped target fichier_donnees
+✔ skipped target mes_donnees
+✔ skipped target mes_traitements
+✔ skipped target mes_resultats
+✔ skipped target mon_graphique
+✔ skipped pipeline [0.18 seconds]
+```
+
+<br>
+=> Toutes les cibles ont été "skippées" car quand on lance `tar_make()`, seules 
+les cibles qui sont à l'état "outdated" sont recalculées.
+
+## Modification du pipeline (2/6)
+
+Modifions un caractère esthétique de notre graphique (en réduisant l'opacité de 
+notre geom - dans le code, il s'agit de l'argument `alpha`).  
+<br>
+Avant de relancer notre pipeline, visualisons le diagramme :
+
+![](img/diagramme_visnetwork_2.png){fig-align="center"}  
+
+## Modification du pipeline (3/6)
+
+<br>
+=> Grâce à sa gestion interne des dépendances entre les cibles, `targets` s'est 
+rendu compte que la `faire_graphique` a été modifiée (elle est passée en statut 
+"outdated"). Et comme la cible `mon_graphique` dépend de cette fonction, celle-ci 
+a également été placée en outdated.  
+
+<br>
+
+::: callout-note
+On peut directement obtenir la liste des cibles qui ne sont plus à jour à l'aide 
+de la fonction [tar_outdated()](https://docs.ropensci.org/targets/reference/tar_outdated.html).
+
+```{.r}
+> tar_outdated()
+[1] "mon_graphique"
+```
+
+:::
+
+## Modification du pipeline (4/6)
+
+Relançons notre pipeline :  
+
+```{.r}
+> tar_make()
+✔ skipped target fichier_donnees
+✔ skipped target mes_donnees
+✔ skipped target mes_traitements
+✔ skipped target mes_resultats
+▶ dispatched target mon_graphique
+● completed target mon_graphique [0 seconds]
+▶ ended pipeline [0.57 seconds]
+```
+
+<br>
+=> On voit que les cibles `fichier_donnees`, `mes_donnees`, `mes_traitements` et 
+`mes_resultats` ont été ignorées : targets est allé prendre directement leurs 
+valeurs déjà stockées en cache.  
+Par contre, la cible `mon_graphique` a bien été recalculée.
+
+## Modification du pipeline (5/6)
+
+On peut désormais vérifier que notre pipeline est à jour en relançant `tar_visnetwork()` :  
+
+![](img/diagramme_visnetwork_3.png){fig-align="center"}  
+
+## Modification du pipeline (6/6)
+
+Prenons maintenant le cas où les données en entrée changent.  
+
+Que se passerait-il ?
+
+::: {..r-stack}
+![](img/diagramme_visnetwork_4.png){.fragment width="1300" fig-align="center"} 
+:::
+
+## A propos du stockage des cibles
+
+<br>
+Par défaut, les cibles sont stockées au format `rds` qui est un format **lent** 
+lorsqu'on a atteint une certaine volumétrie de données.  
+
+=> Il est conseillé d'utiliser un autre format de stockage des cibles.  
+
+Par exemple **pour les dataframes** on pourrait rajouter dans notre pipeline :
+
+```{.r}
+tar_target(
+    name = sauvegarde, 
+    command = enregistre_df(mes_traitements),
+    format = "parquet"
+)
+```
+
+<br>
+=> Dans le dossier `_targets/object`, le fichier sera stocké au forma exigé.
+
+## Gestion des données en cache
+
+targets garde une copie des objets correspondant aux cibles du pipeline dans un cache, en fait sous forme de fichiers placés dans un sous-dossier _targets.
+
+On a vu qu’on peut récupérer ces objets dans notre session via les fonctions `tar_read()` et `tar_load()`.  
+targets propose également plusieurs fonctions pour gérer les données et métadonnées en cache :
+
+- [tar_destroy()](https://docs.ropensci.org/targets/reference/tar_destroy.html?q=tar_dest#null) supprime la totalite du répertoire _targets. Elle permet donc de “repartir de zéro”, sans aucun cache et avec toutes les cibles à recalculer.
+- [tar_delete(donnees)](https://docs.ropensci.org/targets/reference/tar_delete.html) supprime l’objet donnees du cache et place l’état de la cible correspondante à outdated. Elle permet de forcer le recalcul d’une cible et de celles qui en dépendent. À noter qu’on peut sélectionner plusieurs cibles en utilisant la syntaxe de la tidy selection.
+- [tar_prune()](https://docs.ropensci.org/targets/reference/tar_prune.html) permet de supprimer les cibles qui ne sont plus présentes dans le pipeline. Elle permet donc de “faire le ménage” quand on a supprimé des étapes dans _targets.R.
+
+## Avantages de targets (1/2)
+
+
+- Le fichier `_targets.R` fournit une description détaillée des étapes du projet. Cela facilite les choses quand on revient dessus après un certain temps et qu’on n’a plus tous les détails en tête, ou si on le partage avec un collègue.  
+
+- Chaque cible du pipeline est très majoritairement définie via **des fonctions**, ce qui garantit une séparation et une encapsulation des différentes étapes.  
+
+- l’utilisation de `tar_make()` garantit que toutes les cibles du pipeline sont **recalculées dans le bon ordre** : pas de risque de lancer un script sur des données qui ne seraient pas complètement à jour parce qu’on a oublié de relancer certains recodages par exemple.  
+
+
+## Avantages de targets (2/2)
+
+- `tar_make()` s’exécute toujours dans un **environnement vide**, ce qui élimine les problèmes liés à l’état de notre session en cours et garantit la **reproductibilité des résultats**.  
+
+- Comme targets conserve une copie des résultats des cibles en **cache**, pas besoin de tout recalculer quand on relance le projet, on peut récupérer *µµ**directement les résultats et savoir si ils sont à jour**.  
+
+- `tar_make()` ne recalcule que les cibles qui le nécessitent, **les temps de calcul** et d’exécution sont **optimisés.**
+
+## Inconvénients de targets
+
+<br>
+
+- Malgré les outils mis à disposition par le mainteneur du package, **le débuggage** 
+est un peu plus **complexe** avec targets.  
+
+- Le package contient de nombreuses fonctionnalités avancées (notions de branches, 
+parallélisation des calculs, articulation avec `renv`) ce qui peut rendre le 
+**code** écrit avec targets **moins facilement lisible.**
+
+## Pour aller plus loin
+
+- Les [vignettes officielles](https://docs.ropensci.org/targets/) du package targets  
+- Le [livre officiel écrit par Will Landeau](https://books.ropensci.org/targets/)  
+- Le [chapitre consacré à targets](https://juba.github.io/tidyverse/21-targets.html) par Julien Barnier (en français)  
+- La [fiche relative à targets](https://juba.github.io/tidyverse/21-targets.html) d'utilitr
+
