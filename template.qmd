@@ -1,6 +1,6 @@
 ---
 title: "Le package targets"
-subtitle: "Créer des chaînes de traitements reproductibles avec R"
+subtitle: "Créer des chaînes de traitements reproductibles avec R (Damien Dotta)"
 date: today
 date-format: "DD/MM/YYYY"
 author: "SSP/DEMESIS/BQIS/PAOS"
