@@ -33,8 +33,8 @@ editor:
 
 - Viser la reproductibilité  
 - Adopter les bonnes pratiques de développement  
-- Représenter les étapers d'une chaîne de traitement sous forme de *pipeline*  
-- Facilier la prise en main par autrui  
+- Représenter les étapes d'une chaîne de traitement sous forme de *pipeline*  
+- Faciliter la prise en main par autrui  
 
 ## Pré-requis à targets
 
