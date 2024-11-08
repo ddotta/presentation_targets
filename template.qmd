@@ -1,11 +1,11 @@
 ---
 title: "Le package targets"
 subtitle: "Créer des chaînes de traitements reproductibles avec R (Damien Dotta)"
-date: "18/10/2024"
+date: "11/18/2024"
 date-format: "DD/MM/YYYY"
 author: "SSP/DEMESIS/BQIS/PAOS"
 description: |
-  Présentation du package targets au GUR d'octobre 2024
+  Présentation du package targets au GUR de novembre 2024
 
 slide-tone: false # for blind readers
 chalkboard: false # press the B key to toggle chalkboard
