@@ -115,12 +115,12 @@ mes_resultats <- mes_traitements |>
 #' @return un graphique ggplot2
 faire_graphiques <- function(base, partie) {
   ggplot(data = base) + 
-  geom_jitter(aes(x = partie, y = Species, color=Species),
+  geom_jitter(aes(x = {{partie}}, y = Species),
               width=0.05, height=0.1, alpha=0.5)
 }
 
 mes_resultats |> 
-  faire_graphiques()
+  faire_graphiques(partie = moyenne_sepales)
 ```
 
 ## Création du fichier `_targets.R` (1/2)
