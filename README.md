@@ -1,4 +1,4 @@
-# Présentation du package R targets
+# Présentation du package R {targets}
 
 Support de présentation du package R [targets](https://books.ropensci.org/targets/) et de ses possibilités au groupe des utilisateurs de R du @SSM-Agriculture (novembre 2024)
 
